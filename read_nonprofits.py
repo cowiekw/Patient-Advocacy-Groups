@@ -5,56 +5,91 @@ API Docs: https://projects.propublica.org/nonprofits/api
 """
 import requests as re
 import json
-import sys
+import urllib
+import pandas as pd
+from datetime import datetime
 
-def construct_url(params:dict):
-    url = 'https://projects.propublica.org/nonprofits/api/v2/search.json?'
-    if params.get('organization'):
-        url += f"q={params['organization']}"
-    if params.get('state'):
-        if url[-1] != '?':
-            url = url+'&'
-        url += f"state%5Bid%5D=={params['state']}"
-    if params.get('ntee'):
-        if url[-1] != '?':
-            url +='&'
-        url += f"ntee%5Bid%5D=D=={params['ntee']}"
+STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
+        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "ZZ"]
+
+NTEE_SEARCH_CODES = [2, 4,7] # See https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overview
+ADVOCACY_NTEE_CODES = ['B01', 'E01', 'E240', 'E30Z', 'E86', 'E70', 'F01', 'G01', 'G012', 'G20', 'G46Z',
+            'G50', 'G80', 'H02', 'H12', 'H50', 'H200','S41']
+
+def construct_url(raw_params:dict) -> str:
+    BASE_URL = "https://projects.propublica.org/nonprofits/api/v2/"
+    raw_params = {k:v for k,v in raw_params.items() if v is not None}
+
+    params = {}
+    for key, value in raw_params.items():
+        if key == 'state':
+            key = 'state[id]'
+            if value not in STATES:
+                raise TypeError('Invalid state code')
+        if key == 'ntee':
+            if value not in range(1, 11) and value:
+                raise TypeError('Invalid ntee code')
+            key = 'ntee[id]'
+        if key == 'organization':
+            key = 'organization[id]'
+        params[key] = value
+    param_str = urllib.parse.urlencode(params)
+    url = BASE_URL + 'search.json?' + param_str
     return url
 
 
-ntee_codes = ['B01', 'E01', 'E30Z', 'E86', 'E70', 'F01', 'G01', 'G012', 'G20', 'G46Z', 'G50', 'G80', 'H02', 'H12', 'H50', 'H200','S41']
-
-def prepare_api_request()-> str:
-    organization = input('Organization: ')
-    # state = input('State: ')
-    params = {'organization': organization, 'state':None, 'ntee': None}
-    api_url = construct_url(params)
-    return api_url
-
-def call_propublica_api(api_url:str) -> dict:
+def fetch_data(api_url:str)-> dict:
     res = re.get(api_url)
-    print("Response Status:", res.status_code)
+    print(res.status_code)
+    if not res.status_code== 200:
+        raise LookupError('Nonprofit search failed.') 
     data = res.json()
-    print(f"Raw results: {data['total_results']}")
-    pretty = json.dumps(data, indent=4) 
+    # print(f"Raw results count: {data['total_results']}")
+    # print(json.dumps(data, indent=4))
     return data
 
-def filter_by_ntee_code(response_data:dict)-> list:
-    filtered_organizations = [
-        o for o in response_data["organizations"] if o['ntee_code'] in ntee_codes
-    ]
-    for o in filtered_organizations:
-        print(f"{o['name']}, (ntee:{o['ntee_code']}), {o['ein']}")
-    print(f"Filtered results: {len(filtered_organizations)}")
-    print(type(filtered_organizations))
-    return filtered_organizations
 
-def main():
-    api_url = prepare_api_request()
-    data = call_propublica_api(api_url)
-    organizations = filter_by_ntee_code(data)
+def filter_by_ntee(response_data:dict, ntee:int)-> list:
+    columns = ['name', 'ein', 'ntee_code', 'city', 'state', 'have_filings',
+               'have_pdfs']
+    
+    print(f"\nSelected ntee: {response_data['selected_ntee']}")
+    for o in response_data["organizations"]:
+        print(f"{o['name']}, (ntee:{o['ntee_code']}), ein: {o['ein']}")
+
+    filtered_organizations = [
+        o for o in response_data["organizations"] #  if o['ntee_code'] in ADVOCACY_NTEE_CODES
+    ]
+    if not filtered_organizations:
+        print(f"\nNo matching results founds for ntee {str(ntee)}.")
+
+    org_dicts = []
+    for o in filtered_organizations:
+        org_data = {field: o[field] for field in columns}
+        org_dicts.append(org_data)
+    return pd.DataFrame.from_dict(org_dicts)
+
+def export_to_csv(df:pd.DataFrame, ntee:int):
+    output_name = f'out/nonprofits_ntee{str(ntee)}.csv'
+    print(f"Filtered results: {len(df)}")
+    df.to_csv(output_name, index=False)
+
+def fetch_nonprofits():
+    organization = input('Organization: ')
+    for ntee in range(1, 11):
+        params = {'organization': None, 'state': None, 'ntee': ntee}
+        api_url = construct_url(params)
+        print("\nURL: ", api_url)
+        data = fetch_data(api_url)
+        filtered_df = filter_by_ntee(data, ntee)
+        export_to_csv(filtered_df, ntee)
+
 
 if __name__=="__main__":
-    main()
+    fetch_nonprofits()
+    print(f'Completed at {datetime.now()}')
 
    
