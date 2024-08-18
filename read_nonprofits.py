@@ -25,16 +25,17 @@ def construct_url(raw_params:dict) -> str:
 
     params = {}
     for key, value in raw_params.items():
+        if key == 'organization':
+            key = 'q'
         if key == 'state':
             key = 'state[id]'
             if value not in STATES:
                 raise TypeError('Invalid state code')
         if key == 'ntee':
-            if value not in range(1, 11) and value:
+            if value not in range(1, 11):
                 raise TypeError('Invalid ntee code')
             key = 'ntee[id]'
-        if key == 'organization':
-            key = 'organization[id]'
+        
         params[key] = value
     param_str = urllib.parse.urlencode(params)
     url = BASE_URL + 'search.json?' + param_str
@@ -47,16 +48,14 @@ def fetch_data(api_url:str)-> dict:
     if not res.status_code== 200:
         raise LookupError('Nonprofit search failed.') 
     data = res.json()
-    # print(f"Raw results count: {data['total_results']}")
-    # print(json.dumps(data, indent=4))
+    print(f"Raw results count: {data['total_results']}")
+    print(json.dumps(data, indent=4))
     return data
 
-
-def filter_by_ntee(response_data:dict, ntee:int)-> list:
+def filter_by_ntee(response_data:dict)-> list:
     columns = ['name', 'ein', 'ntee_code', 'city', 'state', 'have_filings',
                'have_pdfs']
-    
-    print(f"\nSelected ntee: {response_data['selected_ntee']}")
+    ntee = response_data['selected_ntee'] or 'x'
     for o in response_data["organizations"]:
         print(f"{o['name']}, (ntee:{o['ntee_code']}), ein: {o['ein']}")
 
@@ -64,7 +63,7 @@ def filter_by_ntee(response_data:dict, ntee:int)-> list:
         o for o in response_data["organizations"] #  if o['ntee_code'] in ADVOCACY_NTEE_CODES
     ]
     if not filtered_organizations:
-        print(f"\nNo matching results founds for ntee {str(ntee)}.")
+        print(f"\nNo matching results founds for ntee {ntee}.")
 
     org_dicts = []
     for o in filtered_organizations:
@@ -73,19 +72,20 @@ def filter_by_ntee(response_data:dict, ntee:int)-> list:
     return pd.DataFrame.from_dict(org_dicts)
 
 def export_to_csv(df:pd.DataFrame, ntee:int):
-    output_name = f'out/nonprofits_ntee{str(ntee)}.csv'
-    print(f"Filtered results: {len(df)}")
+    output_name = f'out/nonprofits_ntee{ntee}.csv'
     df.to_csv(output_name, index=False)
 
 def fetch_nonprofits():
     organization = input('Organization: ')
-    for ntee in range(1, 11):
-        params = {'organization': None, 'state': None, 'ntee': ntee}
-        api_url = construct_url(params)
-        print("\nURL: ", api_url)
-        data = fetch_data(api_url)
-        filtered_df = filter_by_ntee(data, ntee)
-        export_to_csv(filtered_df, ntee)
+    # for ntee in range(1, 11):
+    ntee = None
+    params = {'organization': organization, 'state': 'MD', 'ntee': ntee}
+    api_url = construct_url(params)
+    print("\nURL: ", api_url)
+    data = fetch_data(api_url)
+    filtered_df = filter_by_ntee(data)
+    filtered_df.to_csv('out/nonprofits.csv', index=False)
+    # export_to_csv(filtered_df, 111)
 
 
 if __name__=="__main__":
