@@ -28,7 +28,7 @@ def scrape_ntee_codes():
     if not table: 
         raise ValueError(f"The NTEE page does not contain htmls element of the class '{table_class}'.")
     table_tag = table.find_all('thead')[0]
-    column_names = [subtag.text.strip() for subtag in table_tag.find_all('th')]
+    column_names = [tag.text.strip().lower().replace(' ', '_') for tag in table_tag.find_all('th')]
     table_contents = read_table_rows(table)
     df = pd.DataFrame(table_contents, columns=column_names)
     df.to_csv('data/ntee.csv', index=False)
