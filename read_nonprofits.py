@@ -1,11 +1,11 @@
 """
 Search nonprofits by making an API request to ProPublica.Search by name, state, or NTEE code. 
 """
-import requests as re
+from datetime import datetime
 import json
 import urllib
 import pandas as pd
-from datetime import datetime
+import requests as re
 
 STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
         "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -36,12 +36,13 @@ def construct_url(raw_params:dict) -> str:
 
 
 def fetch_data(api_url:str)-> dict:
-    res = re.get(api_url)
+    res = re.get(api_url, timeout=120)
     if not res.status_code== 200:
-        raise LookupError('Nonprofit search failed.') 
+        raise LookupError('Nonprofit search failed.')
     data = res.json()
     print(json.dumps(data, indent=4))
     return data
+
 
 def load_to_df(data:dict) -> pd.DataFrame:
     columns = ['name', 'ein', 'ntee_code', 'city', 'state', 'have_filings',
@@ -52,9 +53,11 @@ def load_to_df(data:dict) -> pd.DataFrame:
         org_dicts.append(org_data)
     return pd.DataFrame.from_dict(org_dicts)
 
+
 def export_to_csv(df:pd.DataFrame, ntee_code:str):
     output_name = f'out/nonprofits_{ntee_code}.csv'
     df.to_csv(output_name, index=False)
+
 
 def search_nonprofit_by_ntee():
     ntee_code = int(input('NTEE CODE (number 1-11): '))
@@ -65,7 +68,7 @@ def search_nonprofit_by_ntee():
     df = load_to_df(data)
     export_to_csv(df, ntee_code)
 
-    # Check results
+    # Check request and results
     print(f"API url: {api_url}")
     print(df.name)
 
@@ -73,5 +76,3 @@ def search_nonprofit_by_ntee():
 if __name__=="__main__":
     search_nonprofit_by_ntee()
     print(f'Completed at {datetime.now()}')
-
-   
