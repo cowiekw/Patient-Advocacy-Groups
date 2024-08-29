@@ -2,6 +2,7 @@
 Search nonprofits by making an API request to ProPublica.
 Search by name or NTEE code. 
 API Docs: https://projects.propublica.org/nonprofits/api
+NTEEs:  https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overview
 """
 import requests as re
 import json
@@ -15,7 +16,7 @@ STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",
         "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
         "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "ZZ"]
 
-NTEE_SEARCH_CODES = [2, 4,7] # See https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overview
+NTEE_SEARCH_CODES = [2, 4,7] 
 ADVOCACY_NTEE_CODES = ['B01', 'E01', 'E240', 'E30Z', 'E86', 'E70', 'F01', 'G01', 'G012', 'G20', 'G46Z',
             'G50', 'G80', 'H02', 'H12', 'H50', 'H200','S41']
 
