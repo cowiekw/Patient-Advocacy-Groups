@@ -2,10 +2,13 @@
 
 Identifying US-based patient advocacy and disease organizations and their lobbying practices
 
-## Resources
+### Data Sources
 
-API Docs: https://projects.propublica.org/nonprofits/api
-NTEEs: https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overview
+- Nonprofit Data: https://projects.propublica.org/nonprofits/api
+- NTEEs Codes: https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overview
+- Lobbying data: LDA.SENATE.GOV.
+
+Senate Office of Public Records cannot vouch for the data or analyses derived from these data after the data have been retrieved from LDA.SENATE.GOV.
 
 ## Methods
 
@@ -13,7 +16,7 @@ NTEEs: https://urbaninstitute.github.io/nccs-legacy/ntee/ntee-history.html#overv
 - Annotate the CSV to identify codes that may correspong to Patient Advocacy Groups (PAGs)
 - Search the Propubilc nonprofit api for nonprofits under the selected NTEE classifications
 
-### Major Groups
+### NTEE Major Groups
 
 I. Arts, Culture, and Humanities - A
 II. Education - B
